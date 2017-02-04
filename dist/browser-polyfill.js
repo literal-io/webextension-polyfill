@@ -1,4 +1,4 @@
-/* webextension-polyfill - v0.1.0 - Sat Feb 04 2017 17:18:25 */
+/* webextension-polyfill - v0.1.0 - Sat Feb 04 2017 17:27:43 */
 /* -*- Mode: indent-tabs-mode: nil; js-indent-level: 2 -*- */
 /* vim: set sts=2 sw=2 et tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
@@ -847,5 +847,5 @@ if (typeof browser === "undefined") {
     return wrapObject(chrome, staticWrappers, apiMetadata);
   };
 
-  this.browser = wrapAPIs();
+  global.browser = wrapAPIs();
 }
