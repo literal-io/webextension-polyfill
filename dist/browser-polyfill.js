@@ -1,4 +1,4 @@
-/* webextension-polyfill - v0.1.0 - Sat Feb 04 2017 17:27:43 */
+/* webextension-polyfill - v0.1.0 - Sun Feb 05 2017 14:11:16 */
 /* -*- Mode: indent-tabs-mode: nil; js-indent-level: 2 -*- */
 /* vim: set sts=2 sw=2 et tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
@@ -527,42 +527,6 @@ if (typeof browser === "undefined") {
     };
 
     /**
-     * A WeakMap subclass which creates and stores a value for any key which does
-     * not exist when accessed, but behaves exactly as an ordinary WeakMap
-     * otherwise.
-     *
-     * @param {function} createItem
-     *        A function which will be called in order to create the value for any
-     *        key which does not exist, the first time it is accessed. The
-     *        function receives, as its only argument, the key being created.
-     */
-    class DefaultWeakMap extends WeakMap {
-      constructor(createItem, items = undefined) {
-        super(items);
-        this.createItem = createItem;
-      }
-
-      get(key) {
-        if (!this.has(key)) {
-          this.set(key, this.createItem(key));
-        }
-
-        return super.get(key);
-      }
-    }
-
-    /**
-     * Returns true if the given object is an object with a `then` method, and can
-     * therefore be assumed to behave as a Promise.
-     *
-     * @param {*} value The value to test.
-     * @returns {boolean} True if the value is thenable.
-     */
-    const isThenable = value => {
-      return value && typeof value === "object" && typeof value.then === "function";
-    };
-
-    /**
      * Creates and returns a function which, when called, will resolve or reject
      * the given promise based on how it is called:
      *
@@ -770,81 +734,7 @@ if (typeof browser === "undefined") {
       return new Proxy(target, handlers);
     };
 
-    /**
-     * Creates a set of wrapper functions for an event object, which handles
-     * wrapping of listener functions that those messages are passed.
-     *
-     * A single wrapper is created for each listener function, and stored in a
-     * map. Subsequent calls to `addListener`, `hasListener`, or `removeListener`
-     * retrieve the original wrapper, so that  attempts to remove a
-     * previously-added listener work as expected.
-     *
-     * @param {DefaultWeakMap<function, function>} wrapperMap
-     *        A DefaultWeakMap object which will create the appropriate wrapper
-     *        for a given listener function when one does not exist, and retrieve
-     *        an existing one when it does.
-     *
-     * @returns {object}
-     */
-    const wrapEvent = wrapperMap => ({
-      addListener(target, listener, ...args) {
-        target.addListener(wrapperMap.get(listener), ...args);
-      },
-
-      hasListener(target, listener) {
-        return target.hasListener(wrapperMap.get(listener));
-      },
-
-      removeListener(target, listener) {
-        target.removeListener(wrapperMap.get(listener));
-      },
-    });
-
-    const onMessageWrappers = new DefaultWeakMap(listener => {
-      if (typeof listener !== "function") {
-        return listener;
-      }
-
-      /**
-       * Wraps a message listener function so that it may send responses based on
-       * its return value, rather than by returning a sentinel value and calling a
-       * callback. If the listener function returns a Promise, the response is
-       * sent when the promise either resolves or rejects.
-       *
-       * @param {*} message
-       *        The message sent by the other end of the channel.
-       * @param {object} sender
-       *        Details about the sender of the message.
-       * @param {function(*)} sendResponse
-       *        A callback which, when called with an arbitrary argument, sends
-       *        that value as a response.
-       * @returns {boolean}
-       *        True if the wrapped listener returned a Promise, which will later
-       *        yield a response. False otherwise.
-       */
-      return function onMessage(message, sender, sendResponse) {
-        let result = listener(message, sender);
-
-        if (isThenable(result)) {
-          result.then(sendResponse, error => {
-            console.error(error);
-            sendResponse(error);
-          });
-
-          return true;
-        } else if (result !== undefined) {
-          sendResponse(result);
-        }
-      };
-    });
-
-    const staticWrappers = {
-      runtime: {
-        onMessage: wrapEvent(onMessageWrappers),
-      },
-    };
-
-    return wrapObject(chrome, staticWrappers, apiMetadata);
+    return wrapObject(chrome, {}, apiMetadata);
   };
 
   global.browser = wrapAPIs();
